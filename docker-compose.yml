@@ -1,0 +1,75 @@
+networks:
+    app_network:
+        name: app_network
+        driver: bridge
+
+services:
+    backend:
+        build:
+            context: ./server
+            dockerfile: Dockerfile
+        #     tags:
+        #         - password-manager-backend-app
+        # image: password-manager-backend-app
+
+        container_name: password-manager-backend-app
+
+        restart: always
+
+        volumes:
+            - staticfiles:/app/staticfiles
+
+        # ports:
+        #     - "8000:8000"
+
+        networks:
+            - app_network
+
+        command:
+            ["gunicorn", "--bind", "0.0.0.0:8000", "server.wsgi:application"]
+            # ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+    frontend:
+        build: ./client
+        # image: password-manager-frontend-app
+
+        container_name: password-manager-frontend-app
+
+        restart: always
+
+        networks:
+            - app_network
+
+        # ports:
+        #     - "3000:3000"
+
+        depends_on:
+            - backend
+
+        command: ["node", "server.js"]
+
+    nginx:
+        build:
+            context: ./nginx
+            dockerfile: Dockerfile
+        #     tags:
+        #         - password-manager-nginx-app
+        # image: password-manager-nginx-app
+
+        container_name: password-manager-nginx-app
+
+        ports:
+            - 80:80
+
+        networks:
+            - app_network
+
+        volumes:
+            - staticfiles:/app/static
+
+        depends_on:
+            - backend
+            - frontend
+
+volumes:
+    staticfiles:
